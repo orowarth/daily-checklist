@@ -4,7 +4,6 @@ import type  { User } from "firebase/auth";
 import { 
   getFirestore, 
   doc, 
-  getDoc, 
   updateDoc, 
   collection, 
   query, 
@@ -58,27 +57,30 @@ export async function getOrCreateTodaysChecklist(user: User): Promise<{ docId: s
 
   if (!querySnapshot.empty) {
     const doc = querySnapshot.docs[0];
-    console.log("Found today's checklist:", doc.id);
     return {
       docId: doc.id,
       items: doc.data().items as ChecklistItem[],
     };
   } 
-  else {
-    console.log("No checklist for today, creating one...");
+  else {    
+    const lastChecklistQuery = query(
+        collection(db, "dailyChecklists"),
+        where("userId", "==", user.uid),
+        orderBy("date", "desc"),
+        limit(1)
+    );
+    const lastChecklistSnapshot = await getDocs(lastChecklistQuery);
     
-    const userDocRef = doc(db, "users", user.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    let templateItems: ChecklistTemplateItem[] = [];
+    let newDailyItems: ChecklistItem[] = [];
 
-    if (userDocSnap.exists() && userDocSnap.data().checklistTemplate) {
-      templateItems = userDocSnap.data().checklistTemplate;
+    if (!lastChecklistSnapshot.empty) {
+      const lastItems = lastChecklistSnapshot.docs[0].data().items as ChecklistItem[];
+      
+      newDailyItems = lastItems.map(item => ({
+        ...item,
+        checkedAt: null,
+      }));
     }
-
-    const newDailyItems: ChecklistItem[] = templateItems.map(item => ({
-      ...item,
-      checkedAt: null,
-    }));
 
     const newDocRef = await addDoc(collection(db, "dailyChecklists"), {
       userId: user.uid,
@@ -86,7 +88,6 @@ export async function getOrCreateTodaysChecklist(user: User): Promise<{ docId: s
       items: newDailyItems,
     });
     
-    console.log("Created new checklist with ID:", newDocRef.id);
     return {
       docId: newDocRef.id,
       items: newDailyItems,
@@ -97,7 +98,6 @@ export async function getOrCreateTodaysChecklist(user: User): Promise<{ docId: s
 export async function updateChecklistItems(docId: string, newItems: ChecklistItem[]) {
   const docRef = doc(db, "dailyChecklists", docId);
   await updateDoc(docRef, { items: newItems });
-  console.log(`Updated items for doc ${docId}`);
 }
 
 export async function addItemToChecklist(docId: string, newItem: ChecklistItem) {
@@ -105,7 +105,6 @@ export async function addItemToChecklist(docId: string, newItem: ChecklistItem) 
   await updateDoc(docRef, {
     items: arrayUnion(newItem)
   });
-  console.log(`Added item to doc ${docId}`);
 }
 
 export async function deleteItemFromChecklist(docId: string, itemToDelete: ChecklistItem) {
@@ -113,7 +112,6 @@ export async function deleteItemFromChecklist(docId: string, itemToDelete: Check
   await updateDoc(docRef, {
     items: arrayRemove(itemToDelete)
   });
-  console.log(`Deleted item from doc ${docId}`);
 }
 
 export async function getChecklistHistory(user: User): Promise<{date: string, items: ChecklistItem[]}[]> {

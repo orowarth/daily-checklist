@@ -4,23 +4,37 @@ import TodaysChecklist from "../componets/TodaysChecklist";
 import ChecklistHistory from '../componets/ChecklistHistory';
 
 const styles = {
-  dashboard: { display: 'flex', height: '100vh', fontFamily: 'sans-serif' },
-  sidebar: { width: '300px', borderRight: '1px solid #ccc', padding: '20px', backgroundColor: '#f4f4f4' },
-  mainContent: { flex: 1, padding: '20px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  container: {
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: '20px',
+    fontFamily: 'sans-serif',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '30px',
+  },
+  actionsContainer: {
+    display: 'flex',
+    gap: '10px',
+  },
 };
 
 function Dashboard() {
   return (
-    <div style={styles.dashboard}>
-      <aside style={styles.sidebar}>
-        <ChecklistHistory />
-      </aside>
-      <main style={styles.mainContent}>
-        <div style={styles.header}>
-            <h1>Today's Checklist</h1>
-            <button onClick={() => signOut(auth)}>Sign Out</button>
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <h1>Today's Checklist</h1>
+        
+        <div style={styles.actionsContainer}>
+          <ChecklistHistory />
+          <button onClick={() => signOut(auth)}>Sign Out</button>
         </div>
+      </header>
+      
+      <main>
         <TodaysChecklist />
       </main>
     </div>

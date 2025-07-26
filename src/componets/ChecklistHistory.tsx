@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, getChecklistHistory } from '../firebase';
 import type { ChecklistItem } from '../firebase';
-import HistoryModal from './HistoryModal';
+import HistoryListModal from './HistoryListModal';
+import HistoryDetailModal from './HistoryDetailModal';
 
-interface HistoryEntry {
+export interface HistoryEntry {
   date: string;
   items: ChecklistItem[];
 }
@@ -14,11 +15,12 @@ function ChecklistHistory() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
 
   useEffect(() => {
     if (user) {
+      setLoading(true);
       getChecklistHistory(user)
         .then(setHistory)
         .catch(console.error)
@@ -26,37 +28,38 @@ function ChecklistHistory() {
     }
   }, [user]);
 
-  const handleOpenModal = (entry: HistoryEntry) => {
+  const handleOpenDetailModal = (entry: HistoryEntry) => {
     setSelectedEntry(entry);
-    setIsModalOpen(true);
   };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  
+  const handleCloseDetailModal = () => {
     setSelectedEntry(null);
   };
-
-  if (loading) return <p>Loading history...</p>;
+  
+  const handleCloseListModal = () => {
+    setIsListModalOpen(false);
+    handleCloseDetailModal(); 
+  };
 
   return (
-    <div>
-      <h2>Past 5 Days</h2>
-      {history.length === 0 && <p>No history found.</p>}
+    <>
+      <button onClick={() => setIsListModalOpen(true)} disabled={loading}>
+        {loading ? 'Loading...' : 'View History'}
+      </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {history.map(entry => (
-          <button key={entry.date} onClick={() => handleOpenModal(entry)}>
-            View {new Date(entry.date).toLocaleDateString()}
-          </button>
-        ))}
-      </div>
+      <HistoryListModal
+        isOpen={isListModalOpen}
+        onClose={handleCloseListModal}
+        history={history}
+        onSelectEntry={handleOpenDetailModal}
+      />
 
-      <HistoryModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
+      <HistoryDetailModal
+        isOpen={!!selectedEntry}
+        onClose={handleCloseDetailModal}
         entry={selectedEntry}
       />
-    </div>
+    </>
   );
 }
 
