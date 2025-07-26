@@ -1,7 +1,7 @@
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import TodaysChecklist from "/Firebase/firebase-checklist-app/src/componets/TodaysChecklist";
-import ChecklistHistory from '/Firebase/firebase-checklist-app/src/componets/ChecklistHistory';
+import TodaysChecklist from "../componets/TodaysChecklist";
+import ChecklistHistory from '../componets/ChecklistHistory';
 
 const styles = {
   dashboard: { display: 'flex', height: '100vh', fontFamily: 'sans-serif' },
