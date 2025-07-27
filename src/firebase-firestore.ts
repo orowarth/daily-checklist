@@ -20,7 +20,12 @@ export const db = getFirestore(app);
 
 
 export async function getOrCreateTodaysChecklist(user: User): Promise<{ docId: string; items: ChecklistItem[] }> {
-  const todayString = new Date().toISOString().split('T')[0];
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  const todayString = `${year}-${month}-${day}`;
   
   const q = query(
     collection(db, "dailyChecklists"), 
@@ -28,7 +33,7 @@ export async function getOrCreateTodaysChecklist(user: User): Promise<{ docId: s
     where("date", "==", todayString),
     limit(1)
   );
-
+  
   const querySnapshot = await getDocs(q);
 
   if (!querySnapshot.empty) {
