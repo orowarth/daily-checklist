@@ -1,37 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { HistoryEntry } from './ChecklistHistory';
 import { modalStyles } from './modalStyles';
-
-const buttonStyleBase = {
-  width: '100%',
-  padding: '12px 20px',
-  fontSize: '16px',
-  textAlign: 'center' as const,
-  border: '1px solid #e0e0e0',
-  borderRadius: '8px',
-  backgroundColor: '#f9f9f9',
-  color: '#333',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s, transform 0.2s',
-};
-
-const buttonStyleHover = {
-  backgroundColor: '#efefef',
-  transform: 'translateY(-1px)',
-};
+import styles from './HistoryListModal.module.css';
 
 interface HistoryListModalProps {
   isOpen: boolean;
   onClose: () => void;
   history: HistoryEntry[];
-  onSelectEntry: (entry: HistoryEntry) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 5;
 
-function HistoryListModal({ isOpen, onClose, history, onSelectEntry }: HistoryListModalProps) {
+function HistoryListModal({ isOpen, onClose, history }: HistoryListModalProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [hoveredButtonId, setHoveredButtonId] = useState<string | null>(null); // State for hover effect
+  const [openEntryDate, setOpenEntryDate] = useState<string | null>(null);
+
+  const itemRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   const totalPages = Math.ceil(history.length / ITEMS_PER_PAGE);
 
@@ -42,39 +26,81 @@ function HistoryListModal({ isOpen, onClose, history, onSelectEntry }: HistoryLi
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentItems = history.slice(startIndex, endIndex);
+  
+  const handleToggleAccordion = (date: string) => {
+    const isOpening = openEntryDate !== date;
+    setOpenEntryDate(isOpening ? date : null);
+
+    if (isOpening) {
+      setTimeout(() => {
+        itemRefs.current[date]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }, 0);
+    }
+  };
 
   return (
     <div style={modalStyles.backdrop} onClick={onClose}>
       <div style={modalStyles.content} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={styles.modalHeader}>
           <h4>Checklist History</h4>
-          <button onClick={onClose}>X</button>
+          <button onClick={onClose} className={styles.closeButton}>X</button>
         </div>
         
-        {history.length === 0 && <p>No history found.</p>}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', margin: '15px 0' }}>
-          {currentItems.map(entry => (
-            <button 
-              key={entry.date} 
-              onClick={() => onSelectEntry(entry)}
-              style={ hoveredButtonId === entry.date ? {...buttonStyleBase, ...buttonStyleHover} : buttonStyleBase }
-              onMouseEnter={() => setHoveredButtonId(entry.date)}
-              onMouseLeave={() => setHoveredButtonId(null)}
-            >
-              View {new Date(entry.date).toLocaleDateString()}
-            </button>
-          ))}
+        <div className={styles.listContainer}>
+          {currentItems.length > 0 ? (
+            currentItems.map(entry => (
+              <div 
+                key={entry.date} 
+                className={styles.accordionItem}
+                ref={el => { itemRefs.current[entry.date] = el; }}
+              >
+                <button 
+                  className={styles.accordionHeader} 
+                  onClick={() => handleToggleAccordion(entry.date)}
+                >
+                  <span>{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                  <span className={`${styles.accordionIndicator} ${openEntryDate === entry.date ? styles.open : ''}`}>
+                    ›
+                  </span>
+                </button>
+                {openEntryDate === entry.date && (
+                  <div className={styles.accordionBody}>
+                    <ul>
+                      {entry.items.map(item => (
+                        <li key={item.id}>
+                          {item.checkedAt ? '✅' : '🔲'} {item.label}
+                        </li>
+                      ))}
+                      {entry.items.length === 0 && <li>No items for this day.</li>}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No history found.</p>
+          )}
         </div>
 
+        <div style={{ flexGrow: 1 }} /> 
+
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className={styles.pagination}>
+            <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+              « First
+            </button>
             <button onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>
-              Previous
+              ‹ Previous
             </button>
             <span>Page {currentPage} of {totalPages}</span>
             <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>
-              Next
+              Next ›
+            </button>
+            <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+              Last »
             </button>
           </div>
         )}

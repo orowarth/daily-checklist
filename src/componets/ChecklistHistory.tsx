@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, getChecklistHistory } from '../firebase';
-import type { ChecklistItem } from '../firebase';
+import { auth } from '../firebase-auth';
+import { getChecklistHistory } from '../firebase-firestore';
+import type { ChecklistItem } from '../types';
 import HistoryListModal from './HistoryListModal';
-import HistoryDetailModal from './HistoryDetailModal';
 
 export interface HistoryEntry {
   date: string;
@@ -16,7 +16,6 @@ function ChecklistHistory() {
   const [loading, setLoading] = useState(true);
 
   const [isListModalOpen, setIsListModalOpen] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -28,19 +27,6 @@ function ChecklistHistory() {
     }
   }, [user]);
 
-  const handleOpenDetailModal = (entry: HistoryEntry) => {
-    setSelectedEntry(entry);
-  };
-  
-  const handleCloseDetailModal = () => {
-    setSelectedEntry(null);
-  };
-  
-  const handleCloseListModal = () => {
-    setIsListModalOpen(false);
-    handleCloseDetailModal(); 
-  };
-
   return (
     <>
       <button onClick={() => setIsListModalOpen(true)} disabled={loading}>
@@ -49,15 +35,8 @@ function ChecklistHistory() {
 
       <HistoryListModal
         isOpen={isListModalOpen}
-        onClose={handleCloseListModal}
+        onClose={() => setIsListModalOpen(false)}
         history={history}
-        onSelectEntry={handleOpenDetailModal}
-      />
-
-      <HistoryDetailModal
-        isOpen={!!selectedEntry}
-        onClose={handleCloseDetailModal}
-        entry={selectedEntry}
       />
     </>
   );
