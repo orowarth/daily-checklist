@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Timestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  auth,
+import { auth } from '../firebase-auth';
+import { 
   getOrCreateTodaysChecklist,
   updateChecklistItems,
   addItemToChecklist,
-  deleteItemFromChecklist,
-} from '../firebase';
-import type {  ChecklistItem } from '../firebase'
+  deleteItemFromChecklist
+  } from '../firebase-firestore';
+import type {  ChecklistItem } from '../types'
 
 const styles = {
   container: {
